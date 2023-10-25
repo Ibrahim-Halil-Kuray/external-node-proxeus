@@ -12,7 +12,6 @@ app.get("/health", (req, res) => {
 
 const PROXEUS_URL = "http://localhost:1323";
 const RETRY_INTERVAL = 5;
-// not found. Please try again or if the error persists contact the platform operator
 
 async function registerToProxeus() {
   const nodeInfo = {
@@ -20,12 +19,12 @@ async function registerToProxeus() {
     Name: "UpperCaseService",
     Detail: "Converts string to uppercase",
     Url: `http://localhost:${PORT}`,
-    Secret: "",
+    Secret: "mySecret",
   };
 
-  let registered = false,
-    tryAgain = 10;
-  while (!registered && --tryAgain > 0) {
+  let registered = false;
+  let tryAgain = 10;
+  while (!registered && tryAgain > 0) {
     try {
       const response = await axios.post(
         `${PROXEUS_URL}/api/admin/external/register`,
@@ -35,10 +34,11 @@ async function registerToProxeus() {
         console.log("[nodeservice] registered");
         registered = true;
       }
-      console.log(response.body);
+      console.log(response.data);
     } catch (error) {
-      console.error("[nodeservice] error registering", error);
-      await new Promise((res) => setTimeout(res, RETRY_INTERVAL * 1000));
+      console.error("[nodeservice] error registering", error.response.data);
+      await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL * 1000));
+      tryAgain--;
     }
   }
 }
@@ -48,7 +48,7 @@ app.post(/\/.*\/next$/, (req, res) => {
   //const workflowId = req.params.wflowId;
   if (input) {
     console.log("Processed request: ", req.body);
-    res.json({ "output.firstname": input.toUpperCase() });
+    res.json({ "input.firstname": input.toUpperCase() });
   } else {
     console.error("Invalid request: ", req.body);
     res.status(400).send("text is missing");
